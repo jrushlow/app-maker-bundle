@@ -1,0 +1,3 @@
+[submodule ".maker-bundle"]
+	path = .maker-bundle
+	url = gith:jrushlow/maker-bundle

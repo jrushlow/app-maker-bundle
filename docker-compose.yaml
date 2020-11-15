@@ -1,0 +1,66 @@
+version: '3.7'
+services:
+    workspace:
+        build:
+            context: ./.docker/workspace
+            args:
+                - PHP_VERSION=7.4
+        image: app_maker_bundle_testing_workspace:latest
+        volumes:
+            - ./:/var/htdocs
+        tty: true
+
+    php-cli:
+        build:
+            context: ./.docker/php-cli
+            args:
+                - PHP_VERSION=7.4
+                - XDEBUG_ENABLE=0
+                - XDEBUG_HOST=10.0.1.111
+                - XDEBUG_PORT=9001
+                - XDEBUG_IDEKEY=docker
+        environment:
+            - FUNC_TEST_ENV_FILE=.env.test.local
+        image: app_maker_bundle_testing_cli:latest
+        volumes:
+            - ./:/var/htdocs
+
+    php-fpm:
+        build:
+            context: ./.docker/php-fpm
+            args:
+                - PHP_VERSION=7.4
+                - XDEBUG_ENABLE=1
+                - XDEBUG_HOST=10.0.1.111
+                - XDEBUG_PORT=9001
+                - XDEBUG_IDEKEY=docker
+                - OPCACHE_ENABLE=0
+        image: app_maker_bundle_testing_fpm:latest
+        volumes:
+            - ./:/var/htdocs
+
+    nginx:
+        build:
+            context: ./.docker/nginx
+        image: app_maker_bundle_testing_nginx:latest
+        volumes:
+            - ./public:/var/htdocs/public
+            - ./.docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+            - ./.docker/nginx/conf.d:/etc/nginx/conf.d
+        depends_on:
+            - php-fpm
+        ports:
+            - "8080:80"
+            - "1443:443"
+
+    database:
+        image: 'mariadb:latest'
+        environment:
+            MYSQL_ROOT_PASSWORD: password
+            MYSQL_DATABASE: main
+        ports:
+            # To allow the host machine to access the ports below, modify the lines below.
+            # For example, to allow the host to connect to port 3306 on the container, you would change
+            # "3306" to "3306:3306". Where the first port is exposed to the host and the second is the container port.
+            # See https://docs.docker.com/compose/compose-file/#ports for more information.
+            - '13306:3306'
